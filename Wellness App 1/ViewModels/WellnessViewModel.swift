@@ -26,14 +26,11 @@ class WellnessViewModel: ObservableObject {
 
     var growthStage: GrowthStage {
         switch overallScore {
-        case 0..<25:
-            return .seed
-        case 25..<50:
-            return .sprout
-        case 50..<75:
-            return .youngPlant
-        default:
-            return .blooming
+        case 0..<30: return .seed
+        case 30..<50: return .sprout
+        case 50..<70: return .youngPlant
+        case 70..<85: return .blooming
+        default: return .flourishing
         }
     }
     

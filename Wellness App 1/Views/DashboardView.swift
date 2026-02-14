@@ -6,6 +6,7 @@ enum Mood: String, CaseIterable {
 
 struct DashboardView: View {
 
+    @AppStorage("hasSeenDashboardHint") private var hasSeenDashboardHint = false
     @State private var mood: Mood = .happy
     @State private var score: CGFloat = 65
     @State private var showStats = false
@@ -25,7 +26,7 @@ struct DashboardView: View {
             EnvironmentOverlay(mood: mood)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 28) {
+                VStack(spacing: 16) {
 
                     // MARK: - Header
                     header
@@ -38,6 +39,12 @@ struct DashboardView: View {
 
                     // MARK: - Mood Tracker
                     moodTracker
+                    
+                    // MARK: - Ecosystem Breakdown
+                    ecosystemBreakdown
+
+                    // MARK: - Insight Card
+                    //insightCard
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 120) // prevents floating button overlap
@@ -46,6 +53,237 @@ struct DashboardView: View {
             }
         }
         .overlay(floatingButton, alignment: .bottomTrailing)
+        .overlay {
+            if !hasSeenDashboardHint {
+                dashboardHintOverlay
+            }
+        }
+        .sheet(isPresented: $showStats) {
+            RoutineChecklistView()
+        }
+    }
+}
+
+struct RoutineChecklistView: View {
+    
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var morningWalk = false
+    @State private var meditation = false
+    @State private var journaling = false
+    
+    var body: some View {
+        NavigationView {
+            List {
+                Toggle("Morning Walk", isOn: $morningWalk)
+                Toggle("Meditation", isOn: $meditation)
+                Toggle("Journaling", isOn: $journaling)
+            }
+            .navigationTitle("Daily Rituals")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private extension DashboardView {
+
+    var ecosystemBreakdown: some View {
+        VStack(spacing: 16) {
+
+            // Section Heading
+            HStack {
+                Text("ECOSYSTEM HEALTH")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(secondaryTextColor)
+
+                Spacer()
+            }
+
+            // Main Glass Card
+            VStack(spacing: 22) {
+
+                metricRow(
+                    icon: "figure.walk",
+                    iconColor: .blue,
+                    title: "PHYSICAL VITALITY",
+                    subtitle: "Body movement & exercise",
+                    value: 0.65
+                )
+
+                Divider().opacity(0.2)
+
+                metricRow(
+                    icon: "brain.head.profile",
+                    iconColor: .purple,
+                    title: "MENTAL FOCUS",
+                    subtitle: "Concentration & clarity",
+                    value: 0.40
+                )
+
+                Divider().opacity(0.2)
+
+                metricRow(
+                    icon: "moon.fill",
+                    iconColor: .green,
+                    title: "SLEEP RECOVERY",
+                    subtitle: "Restfulness & quality",
+                    value: 0.80
+                )
+
+                // Info Box
+                infoBox
+            }
+            .padding(20)
+//            .background(
+//                RoundedRectangle(cornerRadius: 28)
+//                    .fill(.ultraThinMaterial)
+//                    .overlay(
+//                        RoundedRectangle(cornerRadius: 28)
+//                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+//                    )
+//            )
+            .glassCard(isDarkMode: isDarkMode)
+        }
+    }
+}
+
+struct GlassCardModifier: ViewModifier {
+    let isDarkMode: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    if isDarkMode {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color.indigo.opacity(0.25))
+                            .blur(radius: 20)
+
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color.white.opacity(0.08))
+                    } else {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.ultraThinMaterial)
+
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color.white.opacity(0.35))
+                    }
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(
+                        isDarkMode
+                        ? Color.white.opacity(0.15)
+                        : Color.white.opacity(0.5),
+                        lineWidth: 1
+                    )
+            )
+    }
+}
+
+extension View {
+    func glassCard(isDarkMode: Bool) -> some View {
+        self.modifier(GlassCardModifier(isDarkMode: isDarkMode))
+    }
+}
+
+private extension DashboardView {
+
+    func metricRow(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String,
+        value: Double
+    ) -> some View {
+
+        VStack(alignment: .leading, spacing: 12) {
+
+            HStack {
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(iconColor.opacity(0.15))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: icon)
+                        .foregroundColor(iconColor)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(secondaryTextColor)
+                }
+
+                Spacer()
+
+                Text("\(Int(value * 100))%")
+                    .font(.subheadline.bold())
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
+            }
+
+            ProgressView(value: value)
+                .tint(Color(red: 0.35, green: 0.75, blue: 0.70)) // calmer tone
+                .scaleEffect(x: 1, y: 1.6, anchor: .center)
+        }
+    }
+}
+
+private extension DashboardView {
+
+    var infoBox: some View {
+        HStack(spacing: 14) {
+
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.25))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(.green)
+            }
+
+            Text(attributedMessage)
+                .font(.subheadline)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Color.green.opacity(0.12))
+        )
+    }
+    
+    var attributedMessage: AttributedString {
+        var text = AttributedString("Your ecosystem is currently ")
+        
+        var thriving = AttributedString("Thriving.")
+        thriving.font = .subheadline.bold()
+        
+        let middle = AttributedString(" Completing your rituals today will trigger a ")
+        
+        var blossom = AttributedString("Blossom Event.")
+        blossom.font = .subheadline.bold()
+        
+        text.append(thriving)
+        text.append(middle)
+        text.append(blossom)
+        
+        return text
     }
 }
 
@@ -80,7 +318,7 @@ private extension DashboardView {
         VStack(spacing: 0) { // Set spacing to 0 for total control
             
             // 1. This pushes the tree down from the header
-            Color.clear.frame(height: 60)
+            Color.clear.frame(height: 0)
 
             ZStack(alignment: .bottom) {
                 // Glow Effect
@@ -93,7 +331,7 @@ private extension DashboardView {
                 Image("mature_tree")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 250)
+                    .frame(height: 185)
             }
             
             // 2. Controlled gap between Tree and Label
@@ -106,14 +344,15 @@ private extension DashboardView {
                 .foregroundColor(isDarkMode ? .white.opacity(0.9) : .black.opacity(0.7))
                 .padding(.horizontal, 32)
                 .padding(.vertical, 12)
-                .background(
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                        )
-                )
+//                .background(
+//                    Capsule()
+//                        .fill(.ultraThinMaterial)
+//                        .overlay(
+//                            Capsule()
+//                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+//                        )
+//                )
+                .glassCard(isDarkMode: isDarkMode)
         }
     }
 }
@@ -145,24 +384,18 @@ private extension DashboardView {
             }
 
             ProgressView(value: score, total: 100)
-                .tint(.green)
+                .tint(Color(red: 0.35, green: 0.75, blue: 0.70))
+                .scaleEffect(x: 1, y: 1.6, anchor: .center)
         }
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 28)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28)
-                        .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                )
-        )
+        .glassCard(isDarkMode: isDarkMode)
         .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
     }
 }
 
 private extension DashboardView {
     var moodTracker: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 2) {
 
             HStack {
                 Text("MOOD TRACKER")
@@ -174,14 +407,47 @@ private extension DashboardView {
 
                 Text("+5 Growth")
                     .font(.caption.bold())
-                    .foregroundColor(.green)
+                    .foregroundColor(Color(red: 0.35, green: 0.75, blue: 0.70))
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(Mood.allCases, id: \.self) { item in
                         let isSelected = item == mood
-
+                        
+                        // 🔥 Break complex colors into constants
+                        let backgroundColor: Color = {
+                            if isSelected {
+                                return isDarkMode ? Color.white.opacity(0.9) : Color.white
+                            } else {
+                                return isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.25)
+                            }
+                        }()
+                        
+                        let borderColor: Color = {
+                            if isDarkMode {
+                                return Color.white.opacity(0.15)
+                            } else {
+                                return .clear
+                            }
+                        }()
+                        
+                        let textColor: Color = {
+                            if isSelected {
+                                return .black
+                            } else {
+                                return isDarkMode ? Color.white.opacity(0.6) : .secondary
+                            }
+                        }()
+                        
+                        let shadowColor: Color = {
+                            if isSelected && isDarkMode {
+                                return Color.white.opacity(0.25)
+                            } else {
+                                return .clear
+                            }
+                        }()
+                        
                         VStack(spacing: 6) {
                             Text(emoji(for: item))
                                 .font(.system(size: isSelected ? 32 : 24))
@@ -189,22 +455,18 @@ private extension DashboardView {
 
                             Text(item.rawValue.capitalized)
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(
-                                    isSelected
-                                    ? Color.black
-                                    : (isDarkMode ? .white.opacity(0.6) : .secondary)
-                                )
+                                .foregroundColor(textColor)
                         }
                         .frame(width: 70, height: 100)
                         .background(
                             RoundedRectangle(cornerRadius: 22)
-                                .fill(isSelected ? Color.white : Color.white.opacity(0.25))
+                                .fill(backgroundColor)
                         )
-                        .shadow(
-                            color: isSelected ? .black.opacity(0.15) : .clear,
-                            radius: 8,
-                            y: 4
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22)
+                                .stroke(borderColor, lineWidth: 1)
                         )
+                        .shadow(color: shadowColor, radius: 12)
                         .animation(.easeInOut(duration: 0.25), value: mood)
                         .onTapGesture {
                             mood = item
@@ -235,6 +497,49 @@ private extension DashboardView {
     }
 }
 
+private extension DashboardView {
+
+    var dashboardHintOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.28)
+                .ignoresSafeArea()
+
+            VStack(spacing: 22) {
+
+                Text("Welcome to your ecosystem")
+                    .font(.title2.bold())
+                    .multilineTextAlignment(.center)
+
+                Text("Track your mood daily and tap the bottom-right button to manage your rituals.")
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+
+                Button {
+                    hasSeenDashboardHint = true
+                } label: {
+                    Text("Got it")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.primary)
+                        )
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+            }
+            .padding(30)
+            .background(
+                RoundedRectangle(cornerRadius: 26)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: .black.opacity(0.08), radius: 30, y: 15)
+            )
+            .padding(30)
+        }
+    }
+}
+
 struct EnvironmentOverlay: View {
 
     let mood: Mood
@@ -249,10 +554,10 @@ struct EnvironmentOverlay: View {
                     .offset(x: 120, y: -220)
 
             case .sad:
-                clouds(color: .gray.opacity(0.25))
+                clouds(color: .gray.opacity(0.45))
 
             case .angry:
-                clouds(color: .red.opacity(0.2))
+                clouds(color: .red.opacity(0.35))
 
             case .sleepy:
                 moon
@@ -289,12 +594,12 @@ struct EnvironmentOverlay: View {
             // First cloud (original height)
             Image(systemName: "cloud.fill")
                 .font(.system(size: 90))
-                .offset(x: -80, y: -200)
+                .offset(x: -80, y: -240)
 
             // Second cloud (slightly lower & shifted)
             Image(systemName: "cloud.fill")
                 .font(.system(size: 80))
-                .offset(x: 100, y: -130)
+                .offset(x: 110, y: -170)
         }
         .foregroundColor(color)
     }
@@ -319,7 +624,7 @@ extension Mood {
 
         case .sad:
             return MoodTheme(
-                background: [.gray.opacity(0.3), .blue.opacity(0.2)],
+                background: [.gray.opacity(0.5), .blue.opacity(0.2)],
                 glow: .blue.opacity(0.2),
                 accent: .blue
             )
@@ -333,7 +638,7 @@ extension Mood {
 
         case .angry:
             return MoodTheme(
-                background: [.orange.opacity(0.3), .red.opacity(0.2)],
+                background: [.orange.opacity(0.5), .red.opacity(0.2)],
                 glow: .red.opacity(0.3),
                 accent: .red
             )

@@ -9,9 +9,20 @@ import SwiftUI
 
 @main
 struct Wellness_App_1App: App {
+
+    @AppStorage("hasSeenWelcome") var hasSeenWelcome = false
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+
+            if !hasSeenWelcome {
+                WelcomeView()
+            } else if !hasCompletedOnboarding {
+                OnboardingView()
+            } else {
+                DashboardView()
+            }
         }
     }
 }

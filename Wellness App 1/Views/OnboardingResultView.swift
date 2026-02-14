@@ -1,0 +1,62 @@
+//
+//  OnboardingResultView.swift
+//  Wellness App 1
+//
+//  Created by SDC-USER on 13/02/26.
+//
+
+import SwiftUI
+
+struct OnboardingResultView: View {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    let stage: GrowthStage
+    let score: Double
+    var onContinue: () -> Void
+
+    var body: some View {
+        ZStack {
+
+            LinearGradient(
+                colors: [Color.white, Color.green.opacity(0.08)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 30) {
+
+                Spacer()
+
+                Image(stage.imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 200)
+
+                Text(stage.title)
+                    .font(.largeTitle.bold())
+
+                Text(stage.message)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+
+                Spacer()
+
+                Button {
+                    hasCompletedOnboarding = true
+                    onContinue()
+                } label: {
+                    Text("Enter My Garden")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+            }
+            .padding(30)
+        }
+    }
+}

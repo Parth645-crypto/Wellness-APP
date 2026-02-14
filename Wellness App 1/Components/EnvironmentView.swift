@@ -1,3 +1,10 @@
+//
+//  EnvironmentView.swift
+//  Wellness App 1
+//
+//  Created by SDC-USER on 09/02/26.
+//
+
 import SwiftUI
 
 struct EnvironmentView: View {
@@ -8,8 +15,8 @@ struct EnvironmentView: View {
     var body: some View {
         ZStack {
 
-            // SKY
-            skyLayer
+            // SKY LAYER
+            skyGradient
 
             VStack {
                 Spacer()
@@ -17,27 +24,49 @@ struct EnvironmentView: View {
                 ZStack {
 
                     // GROUND
-                    groundLayer
+                    groundShape
+                        .frame(height: 120)
 
                     // TREE
-                    if stage != .seed {
-                        treeLayer
-                    } else {
-                        Circle()
-                            .fill(Color.brown.opacity(0.8))
-                            .frame(width: 18, height: 18)
-                            .offset(y: 30)
+                    VStack(spacing: 0) {
+
+                        // LEAVES
+                        if stage != .seed {
+                            Circle()
+                                .fill(leafColor)
+                                .frame(width: canopySize, height: canopySize)
+                                .shadow(radius: 10)
+                                .transition(.scale)
+                        }
+
+                        // TRUNK
+                        if stage != .seed {
+                            Rectangle()
+                                .fill(Color.brown)
+                                .frame(width: 20, height: 80)
+                        }
+
+                        // SEED
+                        if stage == .seed {
+                            Circle()
+                                .fill(Color.brown)
+                                .frame(width: 25, height: 25)
+                        }
+                    }
+
+                    // FLOWERS
+                    if stage == .blooming || stage == .flourishing {
+                        flowerLayer
                     }
                 }
-                .padding(.bottom, 40)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: stage)
     }
 
-    // MARK: SKY
+    // MARK: - SKY
 
-    private var skyLayer: some View {
+    private var skyGradient: some View {
         LinearGradient(
             colors: skyColors,
             startPoint: .top,
@@ -49,9 +78,9 @@ struct EnvironmentView: View {
     private var skyColors: [Color] {
         switch mood {
         case .calm:
-            return [Color.blue.opacity(0.25), Color.white]
+            return [Color.blue.opacity(0.3), Color.green.opacity(0.2)]
         case .happy:
-            return [Color.yellow.opacity(0.3), Color.orange.opacity(0.2)]
+            return [Color.yellow.opacity(0.4), Color.orange.opacity(0.3)]
         case .stressed:
             return [Color.gray.opacity(0.4), Color.blue.opacity(0.2)]
         case .tired:
@@ -61,91 +90,43 @@ struct EnvironmentView: View {
         }
     }
 
-    // MARK: GROUND
+    // MARK: - GROUND
 
-    private var groundLayer: some View {
-        ZStack {
-            Ellipse()
-                .fill(Color.green.opacity(0.3))
-                .frame(height: 180)
-                .blur(radius: 5)
-
-            Ellipse()
-                .fill(Color.green.opacity(0.2))
-                .frame(height: 120)
-        }
+    private var groundShape: some View {
+        Ellipse()
+            .fill(Color.green.opacity(0.4))
+            .scaleEffect(x: 1.5, y: 1)
     }
 
-    // MARK: TREE
-
-    private var treeLayer: some View {
-        VStack(spacing: 0) {
-
-            // CANOPY
-            canopyLayer
-                .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
-
-            // TRUNK
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.brown.opacity(0.8), Color.brown.opacity(0.5)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 22, height: trunkHeight)
-        }
-    }
-
-    private var canopyLayer: some View {
-        ZStack {
-
-            // Left canopy blob
-            Circle()
-                .fill(canopyColor)
-                .frame(width: canopySize * 0.9, height: canopySize * 0.9)
-                .offset(x: -canopySize * 0.25, y: -canopySize * 0.1)
-                .rotationEffect(.degrees(stage == .flourishing ? 1 : 0))
-                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: stage)
-            // Right canopy blob
-            Circle()
-                .fill(canopyColor)
-                .frame(width: canopySize * 0.9, height: canopySize * 0.9)
-                .offset(x: canopySize * 0.25, y: -canopySize * 0.1)
-                .rotationEffect(.degrees(stage == .flourishing ? 1 : 0))
-                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: stage)
-            // Center canopy blob
-            Circle()
-                .fill(canopyColor)
-                .frame(width: canopySize, height: canopySize)
-                .offset(y: -canopySize * 0.2)
-                .rotationEffect(.degrees(stage == .flourishing ? 1 : 0))
-                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: stage)
-        }
-    }
+    // MARK: - TREE PROPERTIES
 
     private var canopySize: CGFloat {
         switch stage {
-        case .sprout: return 80
-        case .youngPlant: return 120
-        case .blooming: return 160
-        case .flourishing: return 200
+        case .sprout: return 60
+        case .youngPlant: return 100
+        case .blooming: return 140
+        case .flourishing: return 170
         default: return 0
         }
     }
 
-    private var trunkHeight: CGFloat {
-        switch stage {
-        case .sprout: return 50
-        case .youngPlant: return 70
-        case .blooming: return 90
-        case .flourishing: return 110
-        default: return 0
-        }
+    private var leafColor: Color {
+        stage == .flourishing ? .mint : .green
     }
 
-    private var canopyColor: Color {
-        stage == .flourishing ? Color.mint : Color.green.opacity(0.8)
+    // MARK: - FLOWERS
+
+    private var flowerLayer: some View {
+        ZStack {
+            ForEach(0..<6) { index in
+                Circle()
+                    .fill(Color.pink)
+                    .frame(width: 10, height: 10)
+                    .offset(
+                        x: CGFloat.random(in: -60...60),
+                        y: CGFloat.random(in: -40...20)
+                    )
+            }
+        }
     }
 }
