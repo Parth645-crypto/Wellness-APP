@@ -4,7 +4,7 @@
 //
 //  Created by SDC-USER on 06/02/26.
 //
-enum GrowthStage {
+enum GrowthStage: String {
     case seed
     case sprout
     case youngPlant

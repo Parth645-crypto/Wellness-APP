@@ -5,11 +5,18 @@ enum Mood: String, CaseIterable {
 }
 
 struct DashboardView: View {
+    
 
     @AppStorage("hasSeenDashboardHint") private var hasSeenDashboardHint = false
     @State private var mood: Mood = .happy
     @State private var score: CGFloat = 65
     @State private var showStats = false
+    @State private var pulse = false
+    @AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
+    
+    var growthStage: GrowthStage {
+        GrowthStage(rawValue: storedStage) ?? .seed
+    }
 
     var body: some View {
         ZStack {
@@ -26,7 +33,7 @@ struct DashboardView: View {
             EnvironmentOverlay(mood: mood)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
 
                     // MARK: - Header
                     header
@@ -68,26 +75,158 @@ struct RoutineChecklistView: View {
     
     @Environment(\.dismiss) var dismiss
     
-    @State private var morningWalk = false
-    @State private var meditation = false
-    @State private var journaling = false
+    @State private var rituals: [Ritual] = [
+        Ritual(title: "30 min Morning Workout", category: .physical, icon: "figure.walk"),
+        Ritual(title: "10 min Mindful Meditation", category: .mental, icon: "brain.head.profile"),
+        Ritual(title: "Track Sleep Quality", category: .physical, icon: "moon.fill"),
+        Ritual(title: "Write in Gratitude Journal", category: .emotional, icon: "heart.fill"),
+        Ritual(title: "Deep Breathing Session", category: .mental, icon: "wind"),
+        Ritual(title: "Evening Stretch", category: .physical, icon: "figure.cooldown")
+    ]
     
     var body: some View {
-        NavigationView {
-            List {
-                Toggle("Morning Walk", isOn: $morningWalk)
-                Toggle("Meditation", isOn: $meditation)
-                Toggle("Journaling", isOn: $journaling)
+        NavigationStack {
+            ZStack {
+                
+                LinearGradient(
+                    colors: [Color.green.opacity(0.08), Color.white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 18) {
+
+                        VStack(spacing: 18) {
+                            ForEach($rituals) { $ritual in
+                                RitualCard(ritual: $ritual)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                    }
+                    .padding(.bottom, 40)
+                }
             }
             .navigationTitle("Daily Rituals")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 17, weight: .semibold))
                     }
                 }
             }
         }
+    }
+}
+
+struct Ritual: Identifiable {
+    let id = UUID()
+    let title: String
+    let category: RitualCategory
+    let icon: String
+    var isCompleted: Bool = false
+}
+
+enum RitualCategory: String {
+    case physical = "PHYSICAL"
+    case mental = "MENTAL"
+    case emotional = "EMOTIONAL"
+    
+    var color: Color {
+        switch self {
+        case .physical: return .blue
+        case .mental: return .purple
+        case .emotional: return .pink
+        }
+    }
+}
+
+struct RitualCard: View {
+    
+    @Binding var ritual: Ritual
+    
+    var body: some View {
+        HStack(spacing: 18) {
+            
+            // Icon container
+            ZStack {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(ritual.category.color.opacity(0.15))
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: ritual.icon)
+                    .foregroundColor(ritual.category.color)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(ritual.title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(ritual.isCompleted ? ritual.category.color : .primary)
+                    .strikethrough(ritual.isCompleted)
+                
+                Text(ritual.category.rawValue)
+                    .font(.system(size: 11, weight: .medium))
+                    .tracking(2)
+                    .foregroundColor(.secondary)            }
+            
+            Spacer()
+            
+            // Custom Circular Toggle
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    ritual.isCompleted.toggle()
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .stroke(
+                            ritual.isCompleted
+                            ? ritual.category.color
+                            : Color.gray.opacity(0.3),
+                            lineWidth: 2
+                        )
+                        .frame(width: 26, height: 26)
+                    
+                    if ritual.isCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 18, height: 18)
+                            .background(ritual.category.color)
+                            .clipShape(Circle())
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.ultraThinMaterial)
+
+                if ritual.isCompleted {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(ritual.category.color.opacity(0.10))
+                }
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28)
+                .stroke(
+                    ritual.isCompleted
+                    ? ritual.category.color.opacity(0.35)
+                    : Color.white.opacity(0.4),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: .black.opacity(0.08), radius: 20, y: 10)
+        .opacity(ritual.isCompleted ? 0.9 : 1)
     }
 }
 
@@ -328,7 +467,7 @@ private extension DashboardView {
                     .blur(radius: 70)
 
                 // The Tree
-                Image("mature_tree")
+                Image(growthStage.imageName)
                     .resizable()
                     .scaledToFit()
                     .frame(height: 185)
@@ -338,7 +477,7 @@ private extension DashboardView {
             Color.clear.frame(height: 20)
 
             // Stage Label
-            Text("MATURE PLANT")
+            Text(growthStage.title.uppercased())
                 .font(.system(size: 13, weight: .bold))
                 .tracking(4)
                 .foregroundColor(isDarkMode ? .white.opacity(0.9) : .black.opacity(0.7))
@@ -487,11 +626,12 @@ private extension DashboardView {
             showStats.toggle()
         } label: {
             Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundColor(.white)
-                .frame(width: 56, height: 56)
+                .frame(width: 60, height: 60)
                 .background(moodTheme.accent)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .shadow(radius: 10)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.25), radius: 12, y: 6)
         }
         .padding(24)
     }
@@ -501,41 +641,75 @@ private extension DashboardView {
 
     var dashboardHintOverlay: some View {
         ZStack {
-            Color.black.opacity(0.28)
+
+            // Soft dim
+            Color.black.opacity(0.15)
                 .ignoresSafeArea()
 
-            VStack(spacing: 22) {
+            // Spotlight ring (aligned exactly to button)
+            // Spotlight ring (heartbeat animation)
+            // Premium breathing halo
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
 
-                Text("Welcome to your ecosystem")
-                    .font(.title2.bold())
-                    .multilineTextAlignment(.center)
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.18))
+                            .frame(width: 90, height: 90)
+                            .blur(radius: 8)
+                            .scaleEffect(pulse ? 1.08 : 0.96)
+                            .animation(
+                                .easeInOut(duration: 1.6)
+                                    .repeatForever(autoreverses: true),
+                                value: pulse
+                            )
 
-                Text("Track your mood daily and tap the bottom-right button to manage your rituals.")
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-
-                Button {
-                    hasSeenDashboardHint = true
-                } label: {
-                    Text("Got it")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.primary)
-                        )
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        Circle()
+                            .stroke(Color.white.opacity(0.9), lineWidth: 3)
+                            .frame(width: 76, height: 76)
+                    }
+                    .padding(.trailing, 10)
+                    .padding(.bottom, 10)
                 }
             }
-            .padding(30)
-            .background(
-                RoundedRectangle(cornerRadius: 26)
-                    .fill(Color.white.opacity(0.9))
-                    .shadow(color: .black.opacity(0.08), radius: 30, y: 15)
-            )
-            .padding(30)
+            .onAppear {
+                pulse = true
+            }
+            // Hint card
+            VStack {
+                Spacer()
+
+                HStack {
+                    Spacer()
+
+                    VStack(spacing: 8) {
+
+                        Text("Tap here to manage\nyour daily rituals")
+                            .font(.subheadline.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 18)
+                            .background(
+                                RoundedRectangle(cornerRadius: 24)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.15), radius: 30, y: 20)
+                            )
+
+                        // Soft curved indicator
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.black.opacity(1.0))
+                            .rotationEffect(.degrees(35))
+                    }
+                    .padding(.trailing, 28)
+                    .padding(.bottom, 75) // lowered properly
+                }
+            }
+        }
+        .onTapGesture {
+            hasSeenDashboardHint = true
         }
     }
 }

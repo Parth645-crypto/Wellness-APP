@@ -1,16 +1,18 @@
-//
-//  UserProfile.swift
-//  Wellness App
-//
-//  Created by SDC-USER on 06/02/26.
-//
+struct UserProfile: Codable {
+    var sleepHours: Int
+    var activityLevel: ActivityLevel
+    var stressLevel: StressLevel
+    var hydrationLevel: HydrationLevel
+}
 
-struct UserProfile {
-    var age: Int
-    var height: Double
-    var weight: Double
-    var sleepHours: Double
-    var stressLevel: Double
-    var exerciseDays: Int
-    var waterIntake: Double
+enum ActivityLevel: String, Codable {
+    case low, moderate, high
+}
+
+enum StressLevel: String, Codable {
+    case low, medium, high
+}
+
+enum HydrationLevel: String, Codable {
+    case poor, average, good
 }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct OnboardingResultView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
     let stage: GrowthStage
     let score: Double
     var onContinue: () -> Void
@@ -44,6 +45,7 @@ struct OnboardingResultView: View {
                 Spacer()
 
                 Button {
+                    storedStage = stage.rawValue   // 🔥 THIS saves the result
                     hasCompletedOnboarding = true
                     onContinue()
                 } label: {
