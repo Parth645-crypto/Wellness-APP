@@ -9,14 +9,25 @@ struct DashboardView: View {
 
     @AppStorage("hasSeenDashboardHint") private var hasSeenDashboardHint = false
     @State private var mood: Mood = .happy
-    @State private var score: CGFloat = 65
+    //@State private var score: CGFloat = 65
     @State private var showStats = false
     @State private var pulse = false
-    @AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
+    @State private var showPromotion = false
+    @State private var promotedStage: GrowthStage?
+   //@AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
     
     var growthStage: GrowthStage {
-        GrowthStage(rawValue: storedStage) ?? .seed
+        viewModel.growthStage
     }
+    
+    @StateObject private var viewModel = EcosystemViewModel(
+        profile: UserProfile(
+            sleepHours: 7,
+            activityLevel: .moderate,
+            stressLevel: .medium,
+            hydrationLevel: .average
+        )
+    )
 
     var body: some View {
         ZStack {
@@ -66,24 +77,44 @@ struct DashboardView: View {
             }
         }
         .sheet(isPresented: $showStats) {
-            RoutineChecklistView()
+            RoutineChecklistView(rituals: $viewModel.rituals)
+        }
+//        .onReceive(viewModel.$rituals) { _ in
+//            viewModel.updateXPIfNeeded()
+//        }
+        .onChange(of: viewModel.rituals) { _ in
+            viewModel.recalculateXP()
+        }
+        .onChange(of: viewModel.growthStage) { newStage in
+            promotedStage = newStage
+            showPromotion = true
+        }
+        .alert("🌱 Growth Unlocked!", isPresented: $showPromotion) {
+            Button("Amazing!") {}
+        } message: {
+            if let stage = promotedStage {
+                Text("You evolved to \(stage.title)!")
+            }
+        }
+        .onAppear {
+            viewModel.checkForDailyReset(
+                profile: UserProfile(
+                    sleepHours: 7,
+                    activityLevel: .moderate,
+                    stressLevel: .medium,
+                    hydrationLevel: .average
+                )
+            )
         }
     }
+    
 }
 
 struct RoutineChecklistView: View {
     
+    @Binding var rituals: [Ritual]
     @Environment(\.dismiss) var dismiss
-    
-    @State private var rituals: [Ritual] = [
-        Ritual(title: "30 min Morning Workout", category: .physical, icon: "figure.walk"),
-        Ritual(title: "10 min Mindful Meditation", category: .mental, icon: "brain.head.profile"),
-        Ritual(title: "Track Sleep Quality", category: .physical, icon: "moon.fill"),
-        Ritual(title: "Write in Gratitude Journal", category: .emotional, icon: "heart.fill"),
-        Ritual(title: "Deep Breathing Session", category: .mental, icon: "wind"),
-        Ritual(title: "Evening Stretch", category: .physical, icon: "figure.cooldown")
-    ]
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -125,12 +156,17 @@ struct RoutineChecklistView: View {
     }
 }
 
-struct Ritual: Identifiable {
+struct Ritual: Identifiable, Equatable {
     let id = UUID()
     let title: String
     let category: RitualCategory
     let icon: String
     var isCompleted: Bool = false
+    
+    static func == (lhs: Ritual, rhs: Ritual) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.isCompleted == rhs.isCompleted
+    }
 }
 
 enum RitualCategory: String {
@@ -508,13 +544,13 @@ private extension DashboardView {
                         .fontWeight(.bold)
                         .foregroundColor(secondaryTextColor)
 
-                    Text("\(Int(score))% Vibe")
+                    Text("\(viewModel.totalXP) XP")
                         .font(.title2.bold())
                 }
 
                 Spacer()
 
-                Text("LVL \(Int(score / 10))")
+                Text("LVL \(Int(viewModel.score / 10))")
                     .font(.caption.bold())
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -522,7 +558,7 @@ private extension DashboardView {
                     .clipShape(Capsule())
             }
 
-            ProgressView(value: score, total: 100)
+            ProgressView(value: Double(viewModel.totalXP), total: 1000)
                 .tint(Color(red: 0.35, green: 0.75, blue: 0.70))
                 .scaleEffect(x: 1, y: 1.6, anchor: .center)
         }

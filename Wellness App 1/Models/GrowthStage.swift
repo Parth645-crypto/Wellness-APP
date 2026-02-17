@@ -4,12 +4,35 @@
 //
 //  Created by SDC-USER on 06/02/26.
 //
+
+import CoreFoundation
+
 enum GrowthStage: String {
     case seed
     case sprout
     case youngPlant
     case blooming
     case flourishing
+
+    static func stage(for score: CGFloat) -> GrowthStage {
+        switch score {
+        case 0..<20: return .seed
+        case 20..<40: return .sprout
+        case 40..<60: return .youngPlant
+        case 60..<80: return .blooming
+        default: return .flourishing
+        }
+    }
+
+    var startingXP: Int {
+        switch self {
+        case .seed: return 0
+        case .sprout: return 120
+        case .youngPlant: return 350
+        case .blooming: return 700
+        case .flourishing: return 1200
+        }
+    }
 }
 
 extension GrowthStage {
