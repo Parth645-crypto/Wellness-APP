@@ -9,7 +9,8 @@ import SwiftUI
 
 struct OnboardingResultView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    //@AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
+    @AppStorage("currentLevel") private var currentLevel: Int = 1
+    @AppStorage("xpInCurrentLevel") private var xpInCurrentLevel: Int = 0
     @AppStorage("totalXP") private var totalXP: Int = 0
     let stage: GrowthStage
     let score: Double
@@ -46,7 +47,9 @@ struct OnboardingResultView: View {
                 Spacer()
 
                 Button {
-                    totalXP = stage.startingXP     // 🔥 THIS saves the result
+                    currentLevel = stage.startingLevel
+                    xpInCurrentLevel = 0
+                    totalXP = stage.startingXP// 🔥 THIS saves the result
                     hasCompletedOnboarding = true
                     onContinue()
                 } label: {

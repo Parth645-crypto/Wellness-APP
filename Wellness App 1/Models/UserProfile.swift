@@ -14,5 +14,5 @@ enum StressLevel: String, Codable {
 }
 
 enum HydrationLevel: String, Codable {
-    case poor, average, good
+    case low, average, high
 }

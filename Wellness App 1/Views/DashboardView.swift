@@ -1,33 +1,28 @@
 import SwiftUI
 
-enum Mood: String, CaseIterable {
+enum Mood: String, CaseIterable, Codable {
     case happy, sad, angry, sleepy, confused, frustrated
 }
 
 struct DashboardView: View {
     
-
+    @State private var showProfile = false
     @AppStorage("hasSeenDashboardHint") private var hasSeenDashboardHint = false
     @State private var mood: Mood = .happy
+    @StateObject private var profileStore = UserProfileStore()
     //@State private var score: CGFloat = 65
     @State private var showStats = false
     @State private var pulse = false
     @State private var showPromotion = false
     @State private var promotedStage: GrowthStage?
+    @State private var showEmotionLockedAlert = false
    //@AppStorage("growthStage") private var storedStage: String = GrowthStage.seed.rawValue
     
     var growthStage: GrowthStage {
         viewModel.growthStage
     }
     
-    @StateObject private var viewModel = EcosystemViewModel(
-        profile: UserProfile(
-            sleepHours: 7,
-            activityLevel: .moderate,
-            stressLevel: .medium,
-            hydrationLevel: .average
-        )
-    )
+    @StateObject private var viewModel = EcosystemViewModel()
 
     var body: some View {
         ZStack {
@@ -77,14 +72,11 @@ struct DashboardView: View {
             }
         }
         .sheet(isPresented: $showStats) {
-            RoutineChecklistView(rituals: $viewModel.rituals)
+            RoutineChecklistView(viewModel: viewModel)
         }
 //        .onReceive(viewModel.$rituals) { _ in
 //            viewModel.updateXPIfNeeded()
 //        }
-        .onChange(of: viewModel.rituals) { _ in
-            viewModel.recalculateXP()
-        }
         .onChange(of: viewModel.growthStage) { newStage in
             promotedStage = newStage
             showPromotion = true
@@ -96,15 +88,14 @@ struct DashboardView: View {
                 Text("You evolved to \(stage.title)!")
             }
         }
+        .alert("Emotion Locked ⏳", isPresented: $showEmotionLockedAlert) {
+            Button("Okay") {}
+        } message: {
+            Text("You can change your emotion again in a few minutes.")
+        }
         .onAppear {
-            viewModel.checkForDailyReset(
-                profile: UserProfile(
-                    sleepHours: 7,
-                    activityLevel: .moderate,
-                    stressLevel: .medium,
-                    hydrationLevel: .average
-                )
-            )
+            viewModel.regenerateRituals(profile: profileStore.profile)
+            viewModel.checkForDailyReset(profile: profileStore.profile)
         }
     }
     
@@ -112,8 +103,9 @@ struct DashboardView: View {
 
 struct RoutineChecklistView: View {
     
-    @Binding var rituals: [Ritual]
+    @ObservedObject var viewModel: EcosystemViewModel
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var scheme
 
     var body: some View {
         NavigationStack {
@@ -130,8 +122,13 @@ struct RoutineChecklistView: View {
                     VStack(spacing: 18) {
 
                         VStack(spacing: 18) {
-                            ForEach($rituals) { $ritual in
-                                RitualCard(ritual: $ritual)
+                            ForEach(viewModel.rituals) { ritual in
+                                RitualCard(
+                                    ritual: ritual,
+                                    onToggle: {
+                                        viewModel.toggleRitual(ritual)
+                                    }
+                                )
                             }
                         }
                         .padding(.horizontal)
@@ -156,41 +153,14 @@ struct RoutineChecklistView: View {
     }
 }
 
-struct Ritual: Identifiable, Equatable {
-    let id = UUID()
-    let title: String
-    let category: RitualCategory
-    let icon: String
-    var isCompleted: Bool = false
-    
-    static func == (lhs: Ritual, rhs: Ritual) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.isCompleted == rhs.isCompleted
-    }
-}
-
-enum RitualCategory: String {
-    case physical = "PHYSICAL"
-    case mental = "MENTAL"
-    case emotional = "EMOTIONAL"
-    
-    var color: Color {
-        switch self {
-        case .physical: return .blue
-        case .mental: return .purple
-        case .emotional: return .pink
-        }
-    }
-}
-
 struct RitualCard: View {
     
-    @Binding var ritual: Ritual
+    let ritual: Ritual
+    let onToggle: () -> Void
     
     var body: some View {
         HStack(spacing: 18) {
             
-            // Icon container
             ZStack {
                 RoundedRectangle(cornerRadius: 18)
                     .fill(ritual.category.color.opacity(0.15))
@@ -209,14 +179,14 @@ struct RitualCard: View {
                 Text(ritual.category.rawValue)
                     .font(.system(size: 11, weight: .medium))
                     .tracking(2)
-                    .foregroundColor(.secondary)            }
+                    .foregroundColor(.secondary)
+            }
             
             Spacer()
             
-            // Custom Circular Toggle
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    ritual.isCompleted.toggle()
+                    onToggle()
                 }
             } label: {
                 ZStack {
@@ -478,13 +448,24 @@ private extension DashboardView {
 
             Spacer()
 
-            Button {} label: {
+            Button {
+                showProfile = true
+            } label: {
                 Image(systemName: "person")
                     .frame(width: 44, height: 44)
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-        }
+            .sheet(isPresented: $showProfile) {
+                ProfileView(
+                    profileStore: profileStore,
+                    ecosystemVM: viewModel,
+                    isDarkMode: isDarkMode
+                )
+                .presentationDetents([.large])
+                .presentationCornerRadius(32)
+                .presentationBackground(.thinMaterial)
+            }        }
     }
 }
 
@@ -544,13 +525,13 @@ private extension DashboardView {
                         .fontWeight(.bold)
                         .foregroundColor(secondaryTextColor)
 
-                    Text("\(viewModel.totalXP) XP")
+                    Text("\(viewModel.xpInCurrentLevel) XP")
                         .font(.title2.bold())
                 }
 
                 Spacer()
 
-                Text("LVL \(Int(viewModel.score / 10))")
+                Text("LVL \(viewModel.currentLevel)")
                     .font(.caption.bold())
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -558,7 +539,10 @@ private extension DashboardView {
                     .clipShape(Capsule())
             }
 
-            ProgressView(value: Double(viewModel.totalXP), total: 1000)
+            ProgressView(
+                value: Double(viewModel.xpInCurrentLevel),
+                total: Double(viewModel.xpPerLevel)
+            )
                 .tint(Color(red: 0.35, green: 0.75, blue: 0.70))
                 .scaleEffect(x: 1, y: 1.6, anchor: .center)
         }
@@ -580,7 +564,7 @@ private extension DashboardView {
 
                 Spacer()
 
-                Text("+5 Growth")
+                Text("Affects tomorrow's ecosystem")
                     .font(.caption.bold())
                     .foregroundColor(Color(red: 0.35, green: 0.75, blue: 0.70))
             }
@@ -644,7 +628,16 @@ private extension DashboardView {
                         .shadow(color: shadowColor, radius: 12)
                         .animation(.easeInOut(duration: 0.25), value: mood)
                         .onTapGesture {
-                            mood = item
+                            let success = viewModel.setEmotion(
+                                item,
+                                profile: profileStore.profile
+                            )
+                            if success {
+                                mood = item
+                            } else {
+                                showEmotionLockedAlert = true
+                            }
+                            mood = viewModel.currentEmotion
                         }
                     }
                 }

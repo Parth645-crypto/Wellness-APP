@@ -24,14 +24,18 @@ enum GrowthStage: String {
         }
     }
 
-    var startingXP: Int {
+    var startingLevel: Int {
         switch self {
-        case .seed: return 0
-        case .sprout: return 120
-        case .youngPlant: return 350
-        case .blooming: return 700
-        case .flourishing: return 1200
+        case .seed: return 1
+        case .sprout: return 3
+        case .youngPlant: return 5
+        case .blooming: return 7
+        case .flourishing: return 9
         }
+    }
+
+    var startingXP: Int {
+        return (startingLevel - 1) * 100
     }
 }
 
