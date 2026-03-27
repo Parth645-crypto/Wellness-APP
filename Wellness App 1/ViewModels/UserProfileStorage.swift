@@ -14,13 +14,15 @@ class UserProfileStore: ObservableObject {
     @AppStorage("activityLevel") var activityRaw: String = "moderate"
     @AppStorage("stressLevel") var stressRaw: String = "medium"
     @AppStorage("hydrationLevel") var hydrationRaw: String = "average"
+    @AppStorage("energyLevel") var energyLevel: Int = 3
 
     var profile: UserProfile {
         UserProfile(
             sleepHours: Int(sleepGoal),
             activityLevel: ActivityLevel(rawValue: activityRaw) ?? .moderate,
             stressLevel: StressLevel(rawValue: stressRaw) ?? .medium,
-            hydrationLevel: HydrationLevel(rawValue: hydrationRaw) ?? .average
+            hydrationLevel: HydrationLevel(rawValue: hydrationRaw) ?? .average,
+            energyLevel: EnergyLevel(rawValue: energyLevel) ?? .medium
         )
     }
 }

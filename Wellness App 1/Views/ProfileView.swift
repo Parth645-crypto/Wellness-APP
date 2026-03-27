@@ -7,53 +7,6 @@ struct ProfileView: View {
     @ObservedObject var ecosystemVM: EcosystemViewModel
     let isDarkMode: Bool
     
-
-//    var body: some View {
-//        NavigationStack {
-//            ZStack {
-//                LinearGradient(
-//                    colors: isDarkMode
-//                    ? [Color.indigo, Color.black]
-//                    : [Color.white, Color.green.opacity(0.06)],
-//                    startPoint: .top,
-//                    endPoint: .bottom
-//                )
-//                .ignoresSafeArea()
-//
-//                ScrollView(showsIndicators: false) {
-//                    VStack(spacing: 28) {
-//                        header
-//                        baselineSection
-//                        growthSection
-//                        stageSection
-//                    }
-//                    .padding(24)
-//                }
-//            }
-//            .navigationTitle("Your Profile")
-//            .navigationBarTitleDisplayMode(.large)
-//            
-//            // 🔥 THIS is the missing piece
-//            .toolbarBackground(.visible, for: .navigationBar)
-//            .toolbarBackground(
-//                isDarkMode ? Color.black.opacity(0.3) : Color.white,
-//                for: .navigationBar
-//            )
-//            .toolbarColorScheme(isDarkMode ? .dark : .light, for: .navigationBar)
-//
-//            .toolbar {
-//                ToolbarItem(placement: .topBarTrailing) {
-//                    Button {
-//                        dismiss()
-//                    } label: {
-//                        Image(systemName: "xmark")
-//                            .foregroundColor(isDarkMode ? .white : .black)
-//                    }
-//                }
-//            }
-//        }
-//    }
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -79,17 +32,18 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Your Profile")
-            .navigationBarTitleDisplayMode(.large)
+            //.navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(isDarkMode ? .inline : .large)
             
             // ✅ THIS fixes title color automatically
             .toolbarColorScheme(isDarkMode ? .dark : .light, for: .navigationBar)
             
             // ✅ Optional but makes it feel premium
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(
-                isDarkMode ? Color.black.opacity(0.3) : Color.white,
-                for: .navigationBar
-            )
+//            .toolbarBackground(
+//                isDarkMode ? Color.black.opacity(0.3) : Color.white,
+//                for: .navigationBar
+//            )
             
             // ✅ Native close button (exactly what you wanted)
             .toolbar {

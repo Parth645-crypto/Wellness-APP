@@ -72,7 +72,10 @@ struct DashboardView: View {
             }
         }
         .sheet(isPresented: $showStats) {
-            RoutineChecklistView(viewModel: viewModel)
+            RoutineChecklistView(
+                viewModel: viewModel,
+                isDarkMode: isDarkMode   // 🔥 THIS FIXES EVERYTHING
+            )
         }
 //        .onReceive(viewModel.$rituals) { _ in
 //            viewModel.updateXPIfNeeded()
@@ -91,7 +94,7 @@ struct DashboardView: View {
         .alert("Emotion Locked ⏳", isPresented: $showEmotionLockedAlert) {
             Button("Okay") {}
         } message: {
-            Text("You can change your emotion again in a few minutes.")
+            Text("You can change your emotion again in \(viewModel.remainingEmotionCooldown())")
         }
         .onAppear {
             viewModel.regenerateRituals(profile: profileStore.profile)
@@ -106,13 +109,17 @@ struct RoutineChecklistView: View {
     @ObservedObject var viewModel: EcosystemViewModel
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var scheme
+    
+    let isDarkMode: Bool
 
     var body: some View {
         NavigationStack {
             ZStack {
                 
                 LinearGradient(
-                    colors: [Color.green.opacity(0.08), Color.white],
+                    colors: isDarkMode
+                    ? [Color.indigo, Color.black]
+                    : [Color.white, Color.green.opacity(0.06)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -127,18 +134,24 @@ struct RoutineChecklistView: View {
                                     ritual: ritual,
                                     onToggle: {
                                         viewModel.toggleRitual(ritual)
-                                    }
+                                    },
+                                    isDarkMode: isDarkMode
                                 )
                             }
                         }
+                        
                         .padding(.horizontal)
                         .padding(.top, 10)
                     }
+                    .foregroundColor(isDarkMode ? .white : .primary)
                     .padding(.bottom, 40)
                 }
             }
             .navigationTitle("Daily Rituals")
-            .navigationBarTitleDisplayMode(.large)
+            //.navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(isDarkMode ? .inline : .large)
+            .toolbarColorScheme(isDarkMode ? .dark : .light, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -157,6 +170,7 @@ struct RitualCard: View {
     
     let ritual: Ritual
     let onToggle: () -> Void
+    let isDarkMode: Bool
     
     var body: some View {
         HStack(spacing: 18) {
@@ -173,13 +187,17 @@ struct RitualCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(ritual.title)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(ritual.isCompleted ? ritual.category.color : .primary)
+                    .foregroundColor(
+                        ritual.isCompleted
+                        ? ritual.category.color
+                        : (isDarkMode ? .white : .primary)
+                    )
                     .strikethrough(ritual.isCompleted)
                 
                 Text(ritual.category.rawValue)
                     .font(.system(size: 11, weight: .medium))
                     .tracking(2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(isDarkMode ? .white.opacity(0.6) : .secondary)
             }
             
             Spacer()
@@ -213,12 +231,24 @@ struct RitualCard: View {
         .padding(20)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(.ultraThinMaterial)
+                if isDarkMode {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color.indigo.opacity(0.25))
+                        .blur(radius: 20)
+
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color.white.opacity(0.08))
+                } else {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(.ultraThinMaterial)
+
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(Color.white.opacity(0.35))
+                }
 
                 if ritual.isCompleted {
                     RoundedRectangle(cornerRadius: 28)
-                        .fill(ritual.category.color.opacity(0.10))
+                        .fill(ritual.category.color.opacity(isDarkMode ? 0.15 : 0.10))
                 }
             }
         )
@@ -227,11 +257,14 @@ struct RitualCard: View {
                 .stroke(
                     ritual.isCompleted
                     ? ritual.category.color.opacity(0.35)
-                    : Color.white.opacity(0.4),
-                    lineWidth: 1
-                )
+                    : (isDarkMode ? Color.white.opacity(0.15) : Color.white.opacity(0.4))
+                    )
         )
-        .shadow(color: .black.opacity(0.08), radius: 20, y: 10)
+        .shadow(
+            color: isDarkMode ? .clear : .black.opacity(0.08),
+            radius: 20,
+            y: 10
+        )
         .opacity(ritual.isCompleted ? 0.9 : 1)
     }
 }
@@ -715,22 +748,25 @@ private extension DashboardView {
 
                     VStack(spacing: 8) {
 
-                        Text("Tap here to manage\nyour daily rituals")
+                        Text("Manage your daily rituals")
                             .font(.subheadline.weight(.semibold))
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 18)
+                            .foregroundColor(primaryTextColor)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
                             .background(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.15), radius: 30, y: 20)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.white.opacity(isDarkMode ? 0.15 : 0.4))
+                                    )
                             )
 
                         // Soft curved indicator
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.black.opacity(1.0))
-                            .rotationEffect(.degrees(35))
+                        Image(systemName: "arrow.down.right")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(primaryTextColor.opacity(0.7))
                     }
                     .padding(.trailing, 28)
                     .padding(.bottom, 75) // lowered properly

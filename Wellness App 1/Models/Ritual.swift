@@ -20,6 +20,13 @@ struct Ritual: Identifiable, Equatable {
     let category: RitualCategory
     let icon: String
     let type: RitualType
+    
+    // 🔥 NEW FIELDS (INTELLIGENCE)
+    let difficulty: Int        // 1 (easy) → 5 (hard)
+    let energyRequired: Int    // 1 (low) → 5 (high)
+    let duration: Int          // in minutes
+    let tags: [String]         // ["focus", "recovery", "social"]
+    
     var isCompleted: Bool = false
     
     static func == (lhs: Ritual, rhs: Ritual) -> Bool {

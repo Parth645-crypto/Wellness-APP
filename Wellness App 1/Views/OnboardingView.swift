@@ -71,7 +71,7 @@ struct OnboardingView: View {
             }
 
             ProgressView(value: vm.progress)
-                .tint(Color(red: 0.35, green: 0.75, blue: 0.70))
+                .tint(vm.currentQuestion.category.accent.opacity(0.9))
                 .scaleEffect(x: 1, y: 1.8, anchor: .center)
                 .animation(.easeInOut(duration: 0.3), value: vm.progress)
         }

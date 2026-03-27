@@ -67,6 +67,27 @@ class EcosystemViewModel: ObservableObject {
         )
     }
     
+    func remainingEmotionCooldown() -> String {
+        
+        let now = Date()
+        let lastChange = Date(timeIntervalSince1970: lastEmotionTimestamp)
+        
+        let elapsed = now.timeIntervalSince(lastChange)
+        let totalCooldown = TimeInterval(emotionCooldownMinutes * 60)
+        
+        let remaining = totalCooldown - elapsed
+        
+        if remaining <= 0 {
+            return "0s"
+        }
+        
+        let minutes = Int(remaining) / 60
+        let seconds = Int(remaining) % 60
+        
+        return minutes > 0
+            ? "\(minutes)m \(seconds)s"
+            : "\(seconds)s"
+    }
     
     private func addXP(_ amount: Int) {
         xpInCurrentLevel += amount
