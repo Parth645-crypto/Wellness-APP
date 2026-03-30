@@ -454,7 +454,7 @@ private extension DashboardView {
         
         let middle = AttributedString(" Completing your rituals today will trigger a ")
         
-        var blossom = AttributedString("Blossom Event.")
+        var blossom = AttributedString("Mature Tree Event.")
         blossom.font = .subheadline.bold()
         
         text.append(thriving)
