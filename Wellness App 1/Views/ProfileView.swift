@@ -237,22 +237,25 @@ struct ProfileView: View {
     }
     
     private var stageSection: some View {
-        HStack(spacing: 16) {
-            
+        HStack(alignment: .bottom, spacing: 16) {
+
             Image(ecosystemVM.growthStage.imageName)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
                 .frame(width: 50, height: 50)
-            
-            VStack(alignment: .leading) {
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .alignmentGuide(.bottom) { $0[.bottom] } // 👈 anchor image
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text("CURRENT STAGE")
                     .font(.caption)
                     .foregroundColor(secondaryText)
-                
+
                 Text(ecosystemVM.growthStage.title)
                     .font(.headline)
             }
-            
+            .alignmentGuide(.bottom) { $0[.bottom] } // 👈 anchor to "Seed"
+
             Spacer()
         }
         .padding(20)

@@ -21,7 +21,7 @@ class OnboardingViewModel: ObservableObject {
     }
 
     var progress: Double {
-        Double(currentIndex) / Double(questions.count)
+        Double(currentIndex + 1) / Double(questions.count)
     }
 
     func selectOption(_ option: OnboardingOption, index: Int) {
